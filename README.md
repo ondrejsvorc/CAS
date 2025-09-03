@@ -42,3 +42,30 @@ U každého kroku by mělo být uvedeno, jakou metodu používáte a proč, co V
 - **casual** – počet neregistrovaných uživatelů
 - **registered** – počet registrovaných uživatelů
 - **cnt** – celkový počet jízd
+
+#### Interpretace
+
+Každý záznam symbolizuje souhrn všech jízd uskutečněných v dané hodině spolu s kontextem (datum, čas, den v týdnu, pracovní den či svátek, počasí, teplota, vlhkost, vítr, …).
+
+První záznam:
+```
+1, 2011-01-01, 1, 0, 1, 0, 0, 6, 0, 1, 0.24, 0.288, 0.81, 0.000, 3, 13, 16
+```
+
+- **instant = 1** → první záznam
+- **dteday = 2011-01-01** → datum 1. 1. 2011
+- **season = 1** → zima
+- **yr = 0** → 2011
+- **mnth = 1** → leden
+- **hr = 0** → hodina 00:00–00:59
+- **holiday = 0** → není svátek
+- **weekday = 6** → sobota
+- **workingday = 0** → nepracovní den
+- **weathersit = 1** → jasno
+- **temp = 0.24** → normalizovaná teplota
+- **atemp = 0.288** → normalizovaná pocitová teplota
+- **hum = 0.81** → vlhkost 81 %
+- **windspeed = 0.000** → bezvětří
+- **casual = 3** → 3 neregistrovaní uživatelé
+- **registered = 13** → 13 registrovaných uživatelů
+- **cnt = 16** → celkem 16 jízd
