@@ -35,10 +35,10 @@ U každého kroku by mělo být uvedeno, jakou metodu používáte a proč, co V
 - **weekday** – den v týdnu (0 neděle … 6 sobota)
 - **workingday** – pracovní den (1 ano, 0 ne)
 - **weathersit** – počasí (1 jasno, 2 mlha/oblačno, 3 déšť/sníh lehký, 4 déšť/sníh silný)
-- **temp** – teplota (0–1)
-- **atemp** – pocitová teplota (0–1)
-- **hum** – vlhkost (0–1)
-- **windspeed** – vítr (0–1)
+- **temp** – teplota (0–1, normalizovaná škála)
+- **atemp** – pocitová teplota (0–1, normalizovaná škála)
+- **hum** – vlhkost (0–1, procenta)
+- **windspeed** – vítr (0–1, normalizovaná škála)
 - **casual** – počet neregistrovaných uživatelů
 - **registered** – počet registrovaných uživatelů
 - **cnt** – celkový počet jízd
