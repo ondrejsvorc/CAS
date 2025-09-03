@@ -26,7 +26,7 @@ U každého kroku by mělo být uvedeno, jakou metodu používáte a proč, co V
 
 #### Sloupce
 - **instant** – ID záznamu (1, 2, 3, …)
-- **dteday** – datum (2011-01-01, …)
+- **dteday** – datum (YYYY-MM-DD)
 - **season** – roční období (1 jaro, 2 léto, 3 podzim, 4 zima)
 - **yr** – rok (0 a 1, kde 0 symbolizuje rok 2011 a 1 rok 2012)
 - **mnth** – měsíc (1–12)
