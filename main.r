@@ -145,3 +145,16 @@ data.frame(
 acf(resid(best_model_iii), main="ACF residuí modelu ze zadání iii)")
 acf(resid(best_model_iv), main="ACF residuí modelu ze zadání iv)")
 acf(resid(best_model_vi), main="ACF residuí modelu ze zadání vi)")
+
+# vii)
+
+aligned <- ts.intersect(cnt=cnt.ts, temp_lag0, hum_lag1, windspeed_lag3)
+future_X <- tail(aligned[, c("temp_lag0","hum_lag1","windspeed_lag3")], 10)
+
+f_iv <- forecast(best_model_iv, h=10)
+f_vi <- forecast(best_model_vi, xreg=future_X, h=10)
+
+par(mfrow=c(1,2))
+plot(f_iv, main="Predikce (ARIMA, iv)")
+plot(f_vi, main="Predikce (ARIMAX, vi)")
+par(mfrow=c(1,1))
