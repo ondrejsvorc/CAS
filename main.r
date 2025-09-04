@@ -108,3 +108,29 @@ compare_aic(model1, model2, model3, model4, model5, model6, model7, model8)
 ccf(cnt.ts, ts(bike_sharing$temp, frequency = 24), lag.max = 72, main = "Kroskorelační funkce mezi počtem jízd a teplotou")
 ccf(cnt.ts, ts(bike_sharing$hum, frequency = 24), lag.max = 72, main = "Kroskorelační funkce mezi počtem jízd a vlhkostí")
 ccf(cnt.ts, ts(bike_sharing$windspeed, frequency = 24), lag.max = 72, main = "Kroskorelační funkce mezi počtem jízd a rychlostí větru")
+
+# vi)
+
+# Exogenní proměnné dle CCF.
+temp_lag0 <- stats::lag(temp.ts, 0)
+hum_lag1 <- stats::lag(hum.ts, -1)
+windspeed_lag3 <- stats::lag(windspeed.ts, -3)
+
+# Oddělení cílové proměnné a matice exogenních proměnných.
+data <- cbind(cnt=cnt.ts, temp_lag0, hum_lag1, windspeed_lag3)
+data <- data[complete.cases(data), ]
+y <- data[, "cnt"]
+X <- data[, c("temp_lag0", "hum_lag1", "windspeed_lag3")]
+
+# ARIMAX model (regrese + ARIMA errors).
+model <- forecast::auto.arima(y, xreg = X)
+summary(model)
+forecast::checkresiduals(model)
+
+# Proměnná windspeed (nevýznamná) -> vliv větru se nepotvrdil.
+library(lmtest)
+ct <- coeftest(model)
+data.frame(
+  p_value = ct[c("temp_lag0","hum_lag1","windspeed_lag3"), "Pr(>|z|)"],
+  significance = ifelse(ct[c("temp_lag0","hum_lag1","windspeed_lag3"), "Pr(>|z|)"] < 0.05, "significant", "insignificant")
+)
