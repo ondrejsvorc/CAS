@@ -79,7 +79,7 @@ model4 <- lm(cnt ~ t + factor(hr) * factor(weekday) + temp + hum + windspeed + w
 summary(model1);
 summary(model2);
 summary(model3);
-summary(model4)
+summary(model4);
 
 compare_aic <- function(...) {
   a <- AIC(...)
