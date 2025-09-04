@@ -68,3 +68,21 @@ plot(cnt.ts.decomposed)
 cnt.ts.rm24 <- rollmean(cnt.ts, k = 24, align = "center")
 plot(cnt.ts, col = "gray", main = "Počet jízd – klouzavý průměr")
 lines(cnt.ts.rm24, col = "steelblue", lwd = 2)
+
+# iii)
+
+t <- 1:length(bike_sharing$cnt)
+model1 <- lm(cnt ~ t + factor(hr), data = bike_sharing)
+model2 <- lm(cnt ~ t + factor(hr) + factor(weekday), data = bike_sharing)
+model3 <- lm(cnt ~ t + factor(hr) * factor(weekday), data = bike_sharing)
+model4 <- lm(cnt ~ t + factor(hr) * factor(weekday) + temp + hum + windspeed + weathersit, data = bike_sharing)
+summary(model1);
+summary(model2);
+summary(model3);
+summary(model4)
+
+compare_aic <- function(...) {
+  a <- AIC(...)
+  a[order(a$AIC), ]
+}
+compare_aic(model1, model2, model3, model4)
