@@ -1,6 +1,6 @@
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
-rows_3_months = 2067
+rows_3_months <- 2067
 bike_sharing <- read.csv("bike_sharing.csv", nrows = rows_3_months)
 bike_sharing$dteday <- as.Date(bike_sharing$dteday)
 bike_sharing$season <- factor(bike_sharing$season, levels = 1:4, labels = c("Winter", "Spring", "Summer", "Fall"))
