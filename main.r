@@ -70,18 +70,31 @@ lines(cnt.ts.rm24, col = "steelblue", lwd = 2)
 
 # iii)
 
+compare_aic <- function(...) {
+  a <- AIC(...)
+  a[order(a$AIC), ]
+}
+
 t <- 1:length(bike_sharing$cnt)
 model1 <- lm(cnt ~ t + factor(hr), data = bike_sharing)
 model2 <- lm(cnt ~ t + factor(hr) + factor(weekday), data = bike_sharing)
 model3 <- lm(cnt ~ t + factor(hr) * factor(weekday), data = bike_sharing)
 model4 <- lm(cnt ~ t + factor(hr) * factor(weekday) + temp + weathersit, data = bike_sharing)
-summary(model1);
-summary(model2);
-summary(model3);
-summary(model4);
-
-compare_aic <- function(...) {
-  a <- AIC(...)
-  a[order(a$AIC), ]
-}
+summary(model1)
+summary(model2)
+summary(model3)
+summary(model4)
 compare_aic(model1, model2, model3, model4)
+
+# iv)
+
+library(forecast)
+model1 <- Arima(cnt.ts, order=c(0,0,0), seasonal=list(order=c(1,1,1), period=24))
+model2 <- Arima(cnt.ts, order=c(1,0,0), seasonal=list(order=c(1,1,1), period=24))
+model3 <- Arima(cnt.ts, order=c(0,0,1), seasonal=list(order=c(1,1,1), period=24))
+model4 <- Arima(cnt.ts, order=c(0,1,1), seasonal=list(order=c(1,1,1), period=24))
+model5 <- Arima(cnt.ts, order=c(1,1,0), seasonal=list(order=c(1,1,1), period=24))
+model6 <- Arima(cnt.ts, order=c(1,0,1), seasonal=list(order=c(1,0,0), period=24))
+model7 <- Arima(cnt.ts, order=c(0,1,1), seasonal=list(order=c(0,1,1), period=24))
+model8 <- auto.arima(cnt.ts, seasonal=TRUE, max.p=2, max.q=2, max.P=1, max.Q=1)
+compare_aic(model1, model2, model3, model4, model5, model6, model7, model8)
