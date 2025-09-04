@@ -158,3 +158,11 @@ par(mfrow=c(1,2))
 plot(f_iv, main="Predikce (ARIMA, iv)")
 plot(f_vi, main="Predikce (ARIMAX, vi)")
 par(mfrow=c(1,1))
+
+# viii)
+
+data.frame(
+  model = c("LM (iii)","ARIMA (iv)","ARIMAX (vi)"),
+  AIC = c(AIC(best_model_iii), AIC(best_model_iv), AIC(best_model_vi)),
+  BIC = c(BIC(best_model_iii), BIC(best_model_iv), BIC(best_model_vi))
+)
