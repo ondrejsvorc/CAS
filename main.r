@@ -85,6 +85,7 @@ summary(model2)
 summary(model3)
 summary(model4)
 compare_aic(model1, model2, model3, model4)
+best_model_iii <- model4
 
 # iv)
 
@@ -98,16 +99,21 @@ model6 <- Arima(cnt.ts, order=c(1,0,1), seasonal=list(order=c(1,0,0), period=24)
 model7 <- Arima(cnt.ts, order=c(0,1,1), seasonal=list(order=c(0,1,1), period=24))
 model8 <- auto.arima(cnt.ts, seasonal=TRUE, max.p=2, max.q=2, max.P=1, max.Q=1)
 compare_aic(model1, model2, model3, model4, model5, model6, model7, model8)
+best_model_iv <- model2
 
 # v)
+
+temp.ts <- ts(bike_sharing$temp, frequency = 24)
+hum.ts <- ts(bike_sharing$hum, frequency = 24)
+windspeed.ts <- ts(bike_sharing$windspeed, frequency = 24)
 
 # 72 lagů = 3 dny dopředu i dozadu.
 # cnt × temp: kladná korelace, lag 0 -> čím vyšší teplota, tím více jízd (okamžitý vliv).
 # cnt × hum: záporná korelace, lag +1 -> čím vyšší vlhkost, tím méně jízd (zpoždění 1h).
 # cnt × windspeed: slabá záporná korelace, lag +3 -> čím silnější vítr, tím méně jízd (zpoždění 3h).
-ccf(cnt.ts, ts(bike_sharing$temp, frequency = 24), lag.max = 72, main = "Kroskorelační funkce mezi počtem jízd a teplotou")
-ccf(cnt.ts, ts(bike_sharing$hum, frequency = 24), lag.max = 72, main = "Kroskorelační funkce mezi počtem jízd a vlhkostí")
-ccf(cnt.ts, ts(bike_sharing$windspeed, frequency = 24), lag.max = 72, main = "Kroskorelační funkce mezi počtem jízd a rychlostí větru")
+ccf(cnt.ts, temp.ts, lag.max = 72, main = "Kroskorelační funkce mezi počtem jízd a teplotou")
+ccf(cnt.ts, hum.ts, lag.max = 72, main = "Kroskorelační funkce mezi počtem jízd a vlhkostí")
+ccf(cnt.ts, windspeed.ts, lag.max = 72, main = "Kroskorelační funkce mezi počtem jízd a rychlostí větru")
 
 # vi)
 
@@ -126,6 +132,7 @@ X <- data[, c("temp_lag0", "hum_lag1", "windspeed_lag3")]
 model <- forecast::auto.arima(y, xreg = X)
 summary(model)
 forecast::checkresiduals(model)
+best_model_vi <- model
 
 # Proměnná windspeed (nevýznamná) -> vliv větru se nepotvrdil.
 library(lmtest)
@@ -134,3 +141,7 @@ data.frame(
   p_value = ct[c("temp_lag0","hum_lag1","windspeed_lag3"), "Pr(>|z|)"],
   significance = ifelse(ct[c("temp_lag0","hum_lag1","windspeed_lag3"), "Pr(>|z|)"] < 0.05, "significant", "insignificant")
 )
+
+acf(resid(best_model_iii), main="ACF residuí modelu ze zadání iii)")
+acf(resid(best_model_iv), main="ACF residuí modelu ze zadání iv)")
+acf(resid(best_model_vi), main="ACF residuí modelu ze zadání vi)")
