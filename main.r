@@ -55,8 +55,6 @@ plot_cnt_hours(get_subset(bike_sharing, days = 2), "Počet jízd (2 pracovní dn
 
 # ii)
 
-library(zoo)
-
 # Sezónní složka je kontstatní bez ohledu na trend (=aditivní).
 cnt.ts <- ts(bike_sharing$cnt, frequency = 24)
 cnt.ts.decomposed <- decompose(cnt.ts, type = "additive")
@@ -65,6 +63,7 @@ plot(cnt.ts.decomposed)
 # Trend se v průběhu 3 měsíců zvedá (od ledna směrem k jaru je průměrný počet jízd vyšší).
 # Klouzavý průměr odfiltroval denní sezónnost a odhalil rostoucí trend v počtu jízd, s krátkodobými propady.
 # Osa x symbolizuje počet dnů.
+library(zoo)
 cnt.ts.rm24 <- rollmean(cnt.ts, k = 24, align = "center")
 plot(cnt.ts, col = "gray", main = "Počet jízd – klouzavý průměr")
 lines(cnt.ts.rm24, col = "steelblue", lwd = 2)
