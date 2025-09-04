@@ -75,7 +75,7 @@ t <- 1:length(bike_sharing$cnt)
 model1 <- lm(cnt ~ t + factor(hr), data = bike_sharing)
 model2 <- lm(cnt ~ t + factor(hr) + factor(weekday), data = bike_sharing)
 model3 <- lm(cnt ~ t + factor(hr) * factor(weekday), data = bike_sharing)
-model4 <- lm(cnt ~ t + factor(hr) * factor(weekday) + temp + hum + windspeed + weathersit, data = bike_sharing)
+model4 <- lm(cnt ~ t + factor(hr) * factor(weekday) + temp + weathersit, data = bike_sharing)
 summary(model1);
 summary(model2);
 summary(model3);
