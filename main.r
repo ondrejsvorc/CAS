@@ -1,6 +1,7 @@
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
-bike_sharing <- read.csv("bike_sharing.csv", nrows = 2000)
+rows_3_months = 2067
+bike_sharing <- read.csv("bike_sharing.csv", nrows = rows_3_months)
 bike_sharing$dteday <- as.Date(bike_sharing$dteday)
 bike_sharing$season <- factor(bike_sharing$season, levels = 1:4, labels = c("Winter", "Spring", "Summer", "Fall"))
 bike_sharing$weathersit <- factor(bike_sharing$weathersit, levels = 1:4, labels = c("Clear", "Mist", "Light rain", "Heavy rain"))
@@ -17,3 +18,37 @@ bike_sharing$datetime <- as.POSIXct(paste(bike_sharing$dteday, bike_sharing$hr),
 
 str(bike_sharing)
 head(bike_sharing)
+
+# i)
+
+plot(
+  x = bike_sharing$datetime,
+  y = bike_sharing$cnt,
+  type = "l",
+  col = "steelblue",
+  xlab = "Měsíc",
+  ylab = "Počet jízd",
+  main = "Počet jízd (cnt)"
+)
+
+get_subset <- function(data, days) { data[1:(days*24), ] }
+plot_cnt_days <- function(data, title) {
+  plot(data$datetime, data$cnt, type="l", col="steelblue", xlab="Čas", ylab="Počet jízd", main=title, xaxt="n")
+  axis.POSIXct(1, at=seq(from=min(data$datetime), to=max(data$datetime), by="1 day"), format="%d.%m")
+  axis.POSIXct(1, at=seq(from=min(data$datetime), to=max(data$datetime), by="6 hours"), labels=FALSE, tcl=-0.3)
+  abline(v=seq(from=min(data$datetime), to=max(data$datetime), by="1 day"), col="lightgray", lty="dotted")
+  grid(nx=NA, ny=NULL, col="gray", lty="dotted")
+}
+plot_cnt_hours <- function(data, title) {
+  plot(data$datetime, data$cnt, type="l", col="steelblue", xlab="Hodina", ylab="Počet jízd", main=title, xaxt="n")
+  axis.POSIXct(1, at=seq(from=min(data$datetime), to=max(data$datetime), by="1 hour"), format="%H:%M", cex.axis=0.7, tcl=-0.3)
+  abline(v=seq(from=min(data$datetime), to=max(data$datetime), by="1 hour"), col="lightgray", lty="dotted")
+  grid(nx=NA, ny=NULL, col="gray", lty="dotted")
+}
+# Denní sezónnost, pravidelné cykly (špičky ráno/odpoledne, noční minimum), kalendářní vlivy (pracovní den vs víkend)
+# Pracovní dny mají podobný průběh (špičky), víkend má nižší průběh (plošší křivka)
+# Intradenní průběh dále zvýrazňuje výkyvy v čase
+plot_cnt_days(get_subset(bike_sharing, days = 14), "Počet jízd (14 dní)")
+plot_cnt_days(get_subset(bike_sharing, days = 7), "Počet jízd (7 dní)")
+plot_cnt_hours(get_subset(bike_sharing, days = 1), "Počet jízd (pracovní den)")
+plot_cnt_hours(get_subset(bike_sharing, days = 2), "Počet jízd (2 pracovní dny)")
