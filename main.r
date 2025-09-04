@@ -33,7 +33,7 @@ plot(
 
 get_subset <- function(data, days) { data[1:(days*24), ] }
 plot_cnt_days <- function(data, title) {
-  plot(data$datetime, data$cnt, type="l", col="steelblue", xlab="Čas", ylab="Počet jízd", main=title, xaxt="n")
+  plot(data$datetime, data$cnt, type="l", col="steelblue", xlab="Den a měsíc", ylab="Počet jízd", main=title, xaxt="n")
   axis.POSIXct(1, at=seq(from=min(data$datetime), to=max(data$datetime), by="1 day"), format="%d.%m")
   axis.POSIXct(1, at=seq(from=min(data$datetime), to=max(data$datetime), by="6 hours"), labels=FALSE, tcl=-0.3)
   abline(v=seq(from=min(data$datetime), to=max(data$datetime), by="1 day"), col="lightgray", lty="dotted")
@@ -45,10 +45,26 @@ plot_cnt_hours <- function(data, title) {
   abline(v=seq(from=min(data$datetime), to=max(data$datetime), by="1 hour"), col="lightgray", lty="dotted")
   grid(nx=NA, ny=NULL, col="gray", lty="dotted")
 }
-# Denní sezónnost, pravidelné cykly (špičky ráno/odpoledne, noční minimum), kalendářní vlivy (pracovní den vs víkend)
-# Pracovní dny mají podobný průběh (špičky), víkend má nižší průběh (plošší křivka)
-# Intradenní průběh dále zvýrazňuje výkyvy v čase
+# Denní sezónnost, pravidelné cykly (špičky ráno/odpoledne, noční minimum), kalendářní vlivy (pracovní den vs víkend).
+# Pracovní dny mají podobný průběh (špičky), víkend má nižší průběh (plošší křivka).
+# Intradenní průběh dále zvýrazňuje výkyvy v čase.
 plot_cnt_days(get_subset(bike_sharing, days = 14), "Počet jízd (14 dní)")
 plot_cnt_days(get_subset(bike_sharing, days = 7), "Počet jízd (7 dní)")
 plot_cnt_hours(get_subset(bike_sharing, days = 1), "Počet jízd (pracovní den)")
 plot_cnt_hours(get_subset(bike_sharing, days = 2), "Počet jízd (2 pracovní dny)")
+
+# ii)
+
+library(zoo)
+
+# Sezónní složka je kontstatní bez ohledu na trend (=aditivní).
+cnt.ts <- ts(bike_sharing$cnt, frequency = 24)
+cnt.ts.decomposed <- decompose(cnt.ts, type = "additive")
+plot(cnt.ts.decomposed)
+
+# Trend se v průběhu 3 měsíců zvedá (od ledna směrem k jaru je průměrný počet jízd vyšší).
+# Klouzavý průměr odfiltroval denní sezónnost a odhalil rostoucí trend v počtu jízd, s krátkodobými propady.
+# Osa x symbolizuje počet dnů.
+cnt.ts.rm24 <- rollmean(cnt.ts, k = 24, align = "center")
+plot(cnt.ts, col = "gray", main = "Počet jízd – klouzavý průměr")
+lines(cnt.ts.rm24, col = "steelblue", lwd = 2)
