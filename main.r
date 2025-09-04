@@ -1,4 +1,4 @@
-setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+setwd(if (requireNamespace("rstudioapi", quietly=TRUE) && rstudioapi::isAvailable()) dirname(rstudioapi::getActiveDocumentContext()$path) else getwd())
 
 rows_3_months <- 2067
 bike_sharing <- read.csv("bike_sharing.csv", nrows = rows_3_months)
