@@ -1,11 +1,14 @@
 setwd(if (requireNamespace("rstudioapi", quietly=TRUE) && rstudioapi::isAvailable()) dirname(rstudioapi::getActiveDocumentContext()$path) else getwd())
 
+# Transformace datasetu, primárně denormalizace vybraných proměnných a přetypování proměnných na správné datové typy.
+# Některé proměnné byly autorem normalizovány pro účely strojového učení (např. teplota byla reprezentována intervalem <0, 1>).
+# Přidání dodatečné proměnné, která je spojením dne a měřené hodiny výpůjčky kola pro čitelnější časovou osu u grafů..
 rows_3_months <- 2067
 bike_sharing <- read.csv("bike_sharing.csv", nrows = rows_3_months)
 bike_sharing$dteday <- as.Date(bike_sharing$dteday)
-bike_sharing$season <- factor(bike_sharing$season, levels = 1:4, labels = c("Winter", "Spring", "Summer", "Fall"))
-bike_sharing$weathersit <- factor(bike_sharing$weathersit, levels = 1:4, labels = c("Clear", "Mist", "Light rain", "Heavy rain"))
-bike_sharing$weekday <- factor(bike_sharing$weekday, levels = 0:6, labels = c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"))
+bike_sharing$season <- factor(bike_sharing$season, levels = 1:4, labels = c("Zima", "Jaro", "Léto", "Podzim"))
+bike_sharing$weathersit <- factor(bike_sharing$weathersit, levels = 1:4, labels = c("Jasno", "Oblačno", "Slabý déšť", "Silný déšť"))
+bike_sharing$weekday <- factor(bike_sharing$weekday, levels = 0:6, labels = c("Neděle", "Pondělí", "Úterý", "Středa", "Čtvrtek", "Pátek", "Sobota"))
 bike_sharing$yr <- factor(bike_sharing$yr, levels = 0:1, labels = c("2011", "2012"))
 bike_sharing$mnth <- factor(bike_sharing$mnth, levels = 1:12, labels = month.name)
 bike_sharing$holiday <- as.logical(bike_sharing$holiday)
@@ -15,21 +18,12 @@ bike_sharing$windspeed <- bike_sharing$windspeed * 67
 bike_sharing$temp <- bike_sharing$temp * (39 - (-8)) + (-8)
 bike_sharing$atemp <- bike_sharing$atemp * (50 - (-16)) + (-16)
 bike_sharing$datetime <- as.POSIXct(paste(bike_sharing$dteday, bike_sharing$hr), format = "%Y-%m-%d %H")
-
 str(bike_sharing)
 head(bike_sharing)
 
 # i)
 
-plot(
-  x = bike_sharing$datetime,
-  y = bike_sharing$cnt,
-  type = "l",
-  col = "steelblue",
-  xlab = "Měsíc",
-  ylab = "Počet jízd",
-  main = "Počet jízd (cnt)"
-)
+plot(x = bike_sharing$datetime, y = bike_sharing$cnt, type = "l", col = "steelblue", xlab = "Měsíc", ylab = "Počet jízd", main = "Počet jízd (cnt)")
 
 get_subset <- function(data, days) { data[1:(days*24), ] }
 plot_cnt_days <- function(data, title) {
@@ -53,20 +47,39 @@ plot_cnt_days(get_subset(bike_sharing, days = 7), "Počet jízd (7 dní)")
 plot_cnt_hours(get_subset(bike_sharing, days = 1), "Počet jízd (pracovní den)")
 plot_cnt_hours(get_subset(bike_sharing, days = 2), "Počet jízd (2 pracovní dny)")
 
+# V pracovní dny je jasně vidět ranní a odpolední dopravní špička, zatímco o víkendu je průběh plošší a maximum nastává spíše odpoledne.
+# Interpretace může být taková, že lidé chodí v pracovní dny ráno do práce/školy a odpoledne ze školy/práce, tak si kolo v tento čas vypůjčují nejvíce.
+# O víkendech si zase lidé obecně rádi přispí, takže nárust výpůjček začíná až v pozdějších dopoledních a odpoledních hodinách, pravděpodobně za účelem aktivního odpočinku.
+# Naše inference vyplívá z datové sady pouze nepřímo. O konkrétních aktivitách uživatelů informace nemáme. Jedná se pouze o jedno z možných vysvětlení.
+working_days <- subset(hourly_cnt_means_by_day, workingday == TRUE)
+weekends <- subset(hourly_cnt_means_by_day, workingday == FALSE)
+plot(x = working_days$hr, y = working_days$cnt, type="l", xlab="Hodina", ylab="Průměrný počet jízd", main = "Průměrný denní průběh počtu jízd")
+lines(weekends$hr, weekends$cnt, lty=2)
+legend("topleft", c("Pracovní den","Víkend"), lty=c(1,2), bty="n")
+
+# Nejvíce jízd je během pracovních dnů, pátek mírně vyčnívá, víkendy jsou slabší.
+# Špičky jsou kolem 8:00 a 17:00, přičemž 18:00-4:00 počet jízd klesá až do úplných minim, a od 5:00 počet jízd zase vzrůstá.
+# Čím je lepší počasí, tím je více jízd.
+boxplot(cnt ~ weekday, data=bike_sharing, xlab="Den v týdnu", ylab="Počet jízd", main="Rozdělení počtu jízd podle dne v týdnu")
+boxplot(cnt ~ hr, data=bike_sharing, xlab="Hodina v týdnu", ylab="Počet jízd", main="Rozdělení počtu jízd podle hodiny dne")
+boxplot(cnt ~ weathersit, data=bike_sharing, xlab="Počasí", ylab="Počet jízd", main="Rozdělení počtu jízd podle počasí")
+
 # ii)
 
+# Trend se v průběhu 3 měsíců zvedá (od ledna směrem k jaru je průměrný počet jízd vyšší - to odpovídá nárustu jízd při lepším počasí).
 # Sezónní složka je kontstatní bez ohledu na trend (=aditivní).
 cnt.ts <- ts(bike_sharing$cnt, frequency = 24)
 cnt.ts.decomposed <- decompose(cnt.ts, type = "additive")
 plot(cnt.ts.decomposed)
 
-# Trend se v průběhu 3 měsíců zvedá (od ledna směrem k jaru je průměrný počet jízd vyšší).
 # Klouzavý průměr odfiltroval denní sezónnost a odhalil rostoucí trend v počtu jízd, s krátkodobými propady.
+# Vidíme, že trend je rostoucí, ale není rovnoměrný, objevují se krátké poklesy.
 # Osa x symbolizuje počet dnů.
 library(zoo)
 cnt.ts.rm24 <- rollmean(cnt.ts, k = 24, align = "center")
 plot(cnt.ts, col = "gray", main = "Počet jízd – klouzavý průměr")
 lines(cnt.ts.rm24, col = "steelblue", lwd = 2)
+legend("topleft", legend = c("Původní řada", "Klouzavý průměr (24h)"), col = c("gray", "steelblue"), lty = 1, lwd = c(1, 2), bty = "n")
 
 # iii)
 
@@ -108,9 +121,13 @@ hum.ts <- ts(bike_sharing$hum, frequency = 24)
 windspeed.ts <- ts(bike_sharing$windspeed, frequency = 24)
 
 # 72 lagů = 3 dny dopředu i dozadu.
-# cnt × temp: kladná korelace, lag 0 -> čím vyšší teplota, tím více jízd (okamžitý vliv).
-# cnt × hum: záporná korelace, lag +1 -> čím vyšší vlhkost, tím méně jízd (zpoždění 1h).
-# cnt × windspeed: slabá záporná korelace, lag +3 -> čím silnější vítr, tím méně jízd (zpoždění 3h).
+# Lag ukazuje, jestli se počet jízd mění hned, nebo až s nějakým zpožděním.
+# Př.: (cnt × temp) lag +1 = dívám se, jestli teplota před hodinou souvisí s počtem jízd teď.
+# Př.: (cnt × temp) lag +0 = porovnávám teplotu a počet jízd ve stejnou hodinu.
+# Př.: (cnt × temp) lag -1 = dívám se, jestli jízdy teď souvisí s teplotou za hodinu.
+# cnt × temp: kladná korelace, lag 0 -> čím vyšší teplota, tím více jízd (okamžitý vliv) -> lidi reagují hned -> když je tepleji, okamžitě víc jezdí.
+# cnt × hum: záporná korelace, lag +1 -> čím vyšší vlhkost, tím méně jízd (zpoždění 1h) -> lidi po vlhku jezdí méně.
+# cnt × windspeed: slabá záporná korelace, lag +3 -> čím silnější vítr, tím méně jízd (zpoždění 3h) -> silnější vítr před třemi hodinami souvisí s tím, že teď lidé jedou méně na kole.
 ccf(cnt.ts, temp.ts, lag.max = 72, main = "Kroskorelační funkce mezi počtem jízd a teplotou")
 ccf(cnt.ts, hum.ts, lag.max = 72, main = "Kroskorelační funkce mezi počtem jízd a vlhkostí")
 ccf(cnt.ts, windspeed.ts, lag.max = 72, main = "Kroskorelační funkce mezi počtem jízd a rychlostí větru")
