@@ -111,7 +111,15 @@ model6 <- Arima(cnt.ts, order=c(1,0,1), seasonal=list(order=c(1,0,0), period=24)
 model7 <- Arima(cnt.ts, order=c(0,1,1), seasonal=list(order=c(0,1,1), period=24))
 model8 <- auto.arima(cnt.ts, seasonal=TRUE, max.p=2, max.q=2, max.P=1, max.Q=1)
 compare_aic(model1, model2, model3, model4, model5, model6, model7, model8)
-best_model_iv <- model2
+# SARIMA(p,d,q)(P,D,Q)[s] = SARIMA(1,0,0)(1,1,1)[24]
+# p=1 : Dnešní počet jízd souvisí s počtem jízd včera (autoregrese).
+# d=0 : Trend není nutné odstraňovat zvlášť (počet jízd neroste pořád dokola nahoru - stačí odstranit denní cyklus).
+# q=0 : Chyby z minulých předpovědí ignoruju, vystačím si s autoregresí a sezónností.
+# P=1 : Dnešní počet jízd v danou hodinu souvisí s počtem jízd v danou hodinu včera (sezónní autoregrese).
+# D=1 : Porovnáváme hodnoty s těmi před 24h -> odstraníme denní cyklus (sezónní rozdílování).
+# Q=1 : Model zohlední, jak moc se spletl ve stejné hodině včera (učení z chyb).
+# s=24: Cyklus je 24 hodin.
+best_model_iv <- model2 
 
 # v)
 
@@ -119,17 +127,36 @@ temp.ts <- ts(bike_sharing$temp, frequency = 24)
 hum.ts <- ts(bike_sharing$hum, frequency = 24)
 windspeed.ts <- ts(bike_sharing$windspeed, frequency = 24)
 
-# 72 lagů = 3 dny dopředu i dozadu.
+# Funkce pro určení lagu s nejvyšší absolutní korelací.
 # Lag ukazuje, jestli se počet jízd mění hned, nebo až s nějakým zpožděním.
 # Př.: (cnt × temp) lag +1 = dívám se, jestli teplota před hodinou souvisí s počtem jízd teď.
 # Př.: (cnt × temp) lag +0 = porovnávám teplotu a počet jízd ve stejnou hodinu.
 # Př.: (cnt × temp) lag -1 = dívám se, jestli jízdy teď souvisí s teplotou za hodinu.
-# cnt × temp: kladná korelace, lag 0 -> čím vyšší teplota, tím více jízd (okamžitý vliv) -> lidi reagují hned -> když je tepleji, okamžitě víc jezdí.
-# cnt × hum: záporná korelace, lag +1 -> čím vyšší vlhkost, tím méně jízd (zpoždění 1h) -> lidi po vlhku jezdí méně.
-# cnt × windspeed: slabá záporná korelace, lag +3 -> čím silnější vítr, tím méně jízd (zpoždění 3h) -> silnější vítr před třemi hodinami souvisí s tím, že teď lidé jedou méně na kole.
-ccf(cnt.ts, temp.ts, lag.max = 72, main = "Kroskorelační funkce mezi počtem jízd a teplotou")
-ccf(cnt.ts, hum.ts, lag.max = 72, main = "Kroskorelační funkce mezi počtem jízd a vlhkostí")
-ccf(cnt.ts, windspeed.ts, lag.max = 72, main = "Kroskorelační funkce mezi počtem jízd a rychlostí větru")
+determine_lag <- function(ccf_result) {
+  correlations <- as.numeric(ccf_result$acf)
+  lags <- ccf_result$lag
+  max_idx <- which.max(abs(correlations))
+  best_lag <- lags[max_idx]
+  best_correlation <- correlations[max_idx]
+  
+  target_lags <- c(-3, -2, -1, 0, 1, 2, 3)
+  rounded_lag <- target_lags[which.min(abs(target_lags - best_lag))]
+  rounded_correlation <- round(best_correlation, 2)
+  
+  abs_corr <- abs(rounded_correlation)
+  strength <- if (abs_corr < 0.1) "velmi slabá" else if (abs_corr < 0.3) "slabá" else if (abs_corr < 0.5) "střední" else "silná"
+  direction <- if (rounded_correlation > 0) "pozitivní" else "negativní"
+  interpretation <- paste(strength, direction, "korelace")
+  
+  return(c(lag = rounded_lag, correlation = rounded_correlation, interpretation = interpretation))
+}
+# 72 lagů = 3 dny dopředu i dozadu.
+# cnt × temp: kladná korelace, lag 0 -> čím vyšší teplota, tím více jízd -> když je tepleji, okamžitě víc jezdí.
+# cnt × hum: záporná korelace, lag 0 -> čím vyšší vlhkost, tím méně jízd -> lidi po vlhku jezdí méně.
+# cnt × windspeed: slabá záporná korelace, lag +1 -> čím silnější vítr, tím méně jízd (zpoždění 1h) -> silnější vítr před hodinou souvisí s tím, že teď lidé jezdí méně.
+print(determine_lag(ccf(cnt.ts, temp.ts, lag.max = 72, main = "Teplota")))
+print(determine_lag(ccf(cnt.ts, hum.ts, lag.max = 72, main = "Vlhkost")))
+print(determine_lag(ccf(cnt.ts, windspeed.ts, lag.max = 72, main = "Rychlost větru")))
 
 # vi)
 
