@@ -51,11 +51,15 @@ plot_cnt_hours(get_subset(bike_sharing, days = 2), "Počet jízd (2 pracovní dn
 # Interpretace může být taková, že lidé chodí v pracovní dny ráno do práce/školy a odpoledne ze školy/práce, tak si kolo v tento čas vypůjčují nejvíce.
 # O víkendech si zase lidé obecně rádi přispí, takže nárust výpůjček začíná až v pozdějších dopoledních a odpoledních hodinách, pravděpodobně za účelem aktivního odpočinku.
 # Naše inference vyplívá z datové sady pouze nepřímo. O konkrétních aktivitách uživatelů informace nemáme. Jedná se pouze o jedno z možných vysvětlení.
+hourly_cnt_means_by_day <- aggregate(cnt ~ hr + workingday, data = bike_sharing, FUN = mean)
 working_days <- subset(hourly_cnt_means_by_day, workingday == TRUE)
 weekends <- subset(hourly_cnt_means_by_day, workingday == FALSE)
-plot(x = working_days$hr, y = working_days$cnt, type="l", xlab="Hodina", ylab="Průměrný počet jízd", main = "Průměrný denní průběh počtu jízd")
-lines(weekends$hr, weekends$cnt, lty=2)
-legend("topleft", c("Pracovní den","Víkend"), lty=c(1,2), bty="n")
+plot(x = working_days$hr, y = working_days$cnt, type="l", col="steelblue", xlab="Hodina", ylab="Průměrný počet jízd", main="Průměrný denní průběh počtu jízd", xaxt="n")
+lines(weekends$hr, weekends$cnt, lty=2, col="darkred")
+axis(1, at=0:23, labels=0:23, cex.axis=0.8, tcl=-0.3)
+abline(v=0:23, col="lightgray", lty="dotted")
+grid(nx=NA, ny=NULL, col="gray", lty="dotted")
+legend("topleft", c("Pracovní den","Víkend"), lty=c(1,2), col=c("steelblue","darkred"), bty="n")
 
 # Nejvíce jízd je během pracovních dnů, pátek mírně vyčnívá, víkendy jsou slabší.
 # Špičky jsou kolem 8:00 a 17:00, přičemž 18:00-4:00 počet jízd klesá až do úplných minim, a od 5:00 počet jízd zase vzrůstá.
@@ -72,12 +76,11 @@ cnt.ts <- ts(bike_sharing$cnt, frequency = 24)
 cnt.ts.decomposed <- decompose(cnt.ts, type = "additive")
 plot(cnt.ts.decomposed)
 
-# Klouzavý průměr odfiltroval denní sezónnost a odhalil rostoucí trend v počtu jízd, s krátkodobými propady.
-# Vidíme, že trend je rostoucí, ale není rovnoměrný, objevují se krátké poklesy.
+# Klouzavý průměr (24h) odfiltruje denní cyklus a ukáže čistější trend v datech.
 # Osa x symbolizuje počet dnů.
 library(zoo)
 cnt.ts.rm24 <- rollmean(cnt.ts, k = 24, align = "center")
-plot(cnt.ts, col = "gray", main = "Počet jízd – klouzavý průměr")
+plot(cnt.ts, col = "gray", xlab = "Den", ylab = "Počet jízd", main = "Počet jízd s klouzavým průměrem")
 lines(cnt.ts.rm24, col = "steelblue", lwd = 2)
 legend("topleft", legend = c("Původní řada", "Klouzavý průměr (24h)"), col = c("gray", "steelblue"), lty = 1, lwd = c(1, 2), bty = "n")
 
@@ -89,14 +92,10 @@ compare_aic <- function(...) {
 }
 
 t <- 1:length(bike_sharing$cnt)
-model1 <- lm(cnt ~ t + factor(hr), data = bike_sharing)
-model2 <- lm(cnt ~ t + factor(hr) + factor(weekday), data = bike_sharing)
-model3 <- lm(cnt ~ t + factor(hr) * factor(weekday), data = bike_sharing)
-model4 <- lm(cnt ~ t + factor(hr) * factor(weekday) + temp + weathersit, data = bike_sharing)
-summary(model1)
-summary(model2)
-summary(model3)
-summary(model4)
+model1 <- lm(cnt ~ t + factor(hr), data = bike_sharing); summary(model1)
+model2 <- lm(cnt ~ t + factor(hr) + factor(weekday), data = bike_sharing); summary(model2)
+model3 <- lm(cnt ~ t + factor(hr) * factor(weekday), data = bike_sharing); summary(model3)
+model4 <- lm(cnt ~ t + factor(hr) * factor(weekday) + temp + weathersit, data = bike_sharing); summary(model4)
 compare_aic(model1, model2, model3, model4)
 best_model_iii <- model4
 
