@@ -162,14 +162,15 @@ print(determine_lag(ccf(cnt.ts, windspeed.ts, lag.max = 72, main = "Rychlost vě
 
 # Exogenní proměnné dle CCF.
 temp_lag0 <- stats::lag(temp.ts, 0)
-hum_lag1 <- stats::lag(hum.ts, -1)
-windspeed_lag3 <- stats::lag(windspeed.ts, -3)
+hum_lag0 <- stats::lag(hum.ts, 0)
+windspeed_lag1 <- stats::lag(windspeed.ts, 1)
+weather_variables <- c("temp_lag0", "hum_lag0", "windspeed_lag1")
 
 # Oddělení cílové proměnné a matice exogenních proměnných.
-data <- cbind(cnt=cnt.ts, temp_lag0, hum_lag1, windspeed_lag3)
+data <- cbind(cnt=cnt.ts, temp_lag0, hum_lag0, windspeed_lag1)
 data <- data[complete.cases(data), ]
 y <- data[, "cnt"]
-X <- data[, c("temp_lag0", "hum_lag1", "windspeed_lag3")]
+X <- data[, weather_variables]
 
 # ARIMAX model (regrese + ARIMA errors).
 model <- forecast::auto.arima(y, xreg = X)
@@ -181,8 +182,8 @@ best_model_vi <- model
 library(lmtest)
 ct <- coeftest(model)
 data.frame(
-  p_value = ct[c("temp_lag0","hum_lag1","windspeed_lag3"), "Pr(>|z|)"],
-  significance = ifelse(ct[c("temp_lag0","hum_lag1","windspeed_lag3"), "Pr(>|z|)"] < 0.05, "significant", "insignificant")
+  p_value = ct[weather_variables, "Pr(>|z|)"],
+  significance = ifelse(ct[weather_variables, "Pr(>|z|)"] < 0.05, "significant", "insignificant")
 )
 
 acf(resid(best_model_iii), main="ACF residuí modelu ze zadání iii)")
@@ -191,8 +192,8 @@ acf(resid(best_model_vi), main="ACF residuí modelu ze zadání vi)")
 
 # vii)
 
-aligned <- ts.intersect(cnt=cnt.ts, temp_lag0, hum_lag1, windspeed_lag3)
-future_X <- tail(aligned[, c("temp_lag0","hum_lag1","windspeed_lag3")], 10)
+aligned <- ts.intersect(cnt=cnt.ts, temp_lag0, hum_lag0, windspeed_lag1)
+future_X <- tail(aligned[, weather_variables], 10)
 
 f_iv <- forecast(best_model_iv, h=10)
 f_vi <- forecast(best_model_vi, xreg=future_X, h=10)
