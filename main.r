@@ -151,9 +151,9 @@ determine_lag <- function(ccf_result) {
   return(c(lag = rounded_lag, correlation = rounded_correlation, interpretation = interpretation))
 }
 # 72 lagů = 3 dny dopředu i dozadu.
-# cnt × temp: kladná korelace, lag 0 -> čím vyšší teplota, tím více jízd -> když je tepleji, okamžitě víc jezdí.
-# cnt × hum: záporná korelace, lag 0 -> čím vyšší vlhkost, tím méně jízd -> lidi po vlhku jezdí méně.
-# cnt × windspeed: slabá záporná korelace, lag +1 -> čím silnější vítr, tím méně jízd (zpoždění 1h) -> silnější vítr před hodinou souvisí s tím, že teď lidé jezdí méně.
+# cnt × temp: kladná korelace, lag 0 -> okamžitý efekt teploty na počet jízd.
+# cnt × hum: záporná korelace, lag 0 -> okamžitý negativní efekt vlhkosti.
+# cnt × windspeed: slabá záporná korelace, lag +1 -> vítr před hodinou koreluje s menším počtem jízd nyní.
 print(determine_lag(ccf(cnt.ts, temp.ts, lag.max = 72, main = "Teplota")))
 print(determine_lag(ccf(cnt.ts, hum.ts, lag.max = 72, main = "Vlhkost")))
 print(determine_lag(ccf(cnt.ts, windspeed.ts, lag.max = 72, main = "Rychlost větru")))
@@ -161,21 +161,23 @@ print(determine_lag(ccf(cnt.ts, windspeed.ts, lag.max = 72, main = "Rychlost vě
 # vi)
 
 # Exogenní proměnné dle CCF.
-temp_lag0 <- stats::lag(temp.ts, 0)
-hum_lag0 <- stats::lag(hum.ts, 0)
-windspeed_lag1 <- stats::lag(windspeed.ts, 1)
+# Exogenni = nezávislé proměnné, které ovlivňují časovou řadu, ale nejsou jí samotnou.
+# Počasí ovlivňuje počet jízd, ale samotný počet jízd nemění počasí.
+temp_lag0 <- lag(temp.ts, k = 0)
+hum_lag0 <- lag(hum.ts, k = 0)
+windspeed_lag1 <- lag(windspeed.ts, k = 1)
 weather_variables <- c("temp_lag0", "hum_lag0", "windspeed_lag1")
 
-# Oddělení cílové proměnné a matice exogenních proměnných.
+# Oddělení cílové proměnné a exogenních proměnných.
 data <- cbind(cnt=cnt.ts, temp_lag0, hum_lag0, windspeed_lag1)
 data <- data[complete.cases(data), ]
 y <- data[, "cnt"]
 X <- data[, weather_variables]
 
 # ARIMAX model (regrese + ARIMA errors).
-model <- forecast::auto.arima(y, xreg = X)
+model <- auto.arima(y, xreg = X, seasonal=TRUE)
 summary(model)
-forecast::checkresiduals(model)
+checkresiduals(model)
 best_model_vi <- model
 
 # Proměnná windspeed (nevýznamná) -> vliv větru se nepotvrdil.
@@ -183,7 +185,7 @@ library(lmtest)
 ct <- coeftest(model)
 data.frame(
   p_value = ct[weather_variables, "Pr(>|z|)"],
-  significance = ifelse(ct[weather_variables, "Pr(>|z|)"] < 0.05, "significant", "insignificant")
+  significance = ifelse(ct[weather_variables, "Pr(>|z|)"] < 0.05, "významná", "nevýznamná")
 )
 
 acf(resid(best_model_iii), main="ACF residuí modelu ze zadání iii)")
@@ -194,10 +196,8 @@ acf(resid(best_model_vi), main="ACF residuí modelu ze zadání vi)")
 
 aligned <- ts.intersect(cnt=cnt.ts, temp_lag0, hum_lag0, windspeed_lag1)
 future_X <- tail(aligned[, weather_variables], 10)
-
 f_iv <- forecast(best_model_iv, h=10)
 f_vi <- forecast(best_model_vi, xreg=future_X, h=10)
-
 par(mfrow=c(1,2))
 plot(f_iv, main="Predikce (ARIMA, iv)")
 plot(f_vi, main="Predikce (ARIMAX, vi)")
