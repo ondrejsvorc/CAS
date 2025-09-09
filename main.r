@@ -2,7 +2,7 @@ setwd(if (requireNamespace("rstudioapi", quietly=TRUE) && rstudioapi::isAvailabl
 
 # Transformace datasetu, primárně denormalizace vybraných proměnných a přetypování proměnných na správné datové typy.
 # Některé proměnné byly autorem normalizovány pro účely strojového učení (např. teplota byla reprezentována intervalem <0, 1>).
-# Přidání dodatečné proměnné, která je spojením dne a měřené hodiny výpůjčky kola pro čitelnější časovou osu u grafů..
+# Přidání dodatečné proměnné, která je spojením dne a měřené hodiny výpůjčky kola pro čitelnější časovou osu u grafů.
 rows_3_months <- 2067
 bike_sharing <- read.csv("bike_sharing.csv", nrows = rows_3_months)
 bike_sharing$dteday <- as.Date(bike_sharing$dteday)
@@ -23,6 +23,7 @@ head(bike_sharing)
 
 # i)
 
+# Pozvolna rostoucí lineární trend (lidé začínají více jezdit, pravděpodobně kvůli zlepšujícímu se počasí).
 plot(x = bike_sharing$datetime, y = bike_sharing$cnt, type = "l", col = "steelblue", xlab = "Měsíc", ylab = "Počet jízd", main = "Počet jízd (cnt)")
 
 get_subset <- function(data, days) { data[1:(days*24), ] }
@@ -97,6 +98,7 @@ model2 <- lm(cnt ~ t + factor(hr) + factor(weekday), data = bike_sharing); summa
 model3 <- lm(cnt ~ t + factor(hr) * factor(weekday), data = bike_sharing); summary(model3)
 model4 <- lm(cnt ~ t + factor(hr) * factor(weekday) + temp + weathersit, data = bike_sharing); summary(model4)
 compare_aic(model1, model2, model3, model4)
+# cnt_t = β0 + β1·t + f(hr, weekday) + β2·temp_t + g(weathersit) + ε_t
 best_model_iii <- model4
 
 # iv)
