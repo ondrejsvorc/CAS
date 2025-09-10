@@ -106,11 +106,10 @@ compare_aic(model1, model2, model3, model4)
 # cnt_t = β0 + β1·t + f(hr, weekday) + β2·temp_t + g(weathersit) + ε_t
 best_model_iii <- model4
 
-hw_add <- HoltWinters(cnt.ts, seasonal = "additive")
-plot(hw_add, main = "Holt-Winters (aditivní)")
-f_hw <- forecast(hw_add, h = 10)
-plot(f_hw, main = "Predikce Holt-Winters")
-
+(cnt.ts.hw <- HoltWinters(cnt.ts, seasonal = "additive"))
+plot(cnt.ts, main = 'Holt-Winters (aditivní)', xlab = 'Den', ylab = 'Počet jízd')
+lines(cnt.ts.hw$fitted[,1], col = 'red', lwd=1)
+legend("topleft", legend=c("Fit", "Data"), col=c("red", "black"), lty=1)
 
 # iv)
 
@@ -142,8 +141,8 @@ windspeed.ts <- ts(bike_sharing$windspeed, frequency = 24)
 # Funkce pro určení lagu s nejvyšší absolutní korelací.
 # Lag ukazuje, jestli se počet jízd mění hned, nebo až s nějakým zpožděním.
 # Př.: (cnt × temp) lag +1 = dívám se, jestli teplota před hodinou souvisí s počtem jízd teď.
-# Př.: (cnt × temp) lag +0 = porovnávám teplotu a počet jízd ve stejnou hodinu.
-# Př.: (cnt × temp) lag -1 = dívám se, jestli jízdy teď souvisí s teplotou za hodinu.
+# Př.: (cnt × temp) lag +0 = dívám se, jestli teplota teď bude souviset s počtem jízd teď.
+# Př.: (cnt × temp) lag -1 = dívám se, jestli teplota za hodinu bude souviset s počtem jízd teď.
 determine_lag <- function(ccf_result) {
   correlations <- as.numeric(ccf_result$acf)
   lags <- ccf_result$lag
@@ -216,8 +215,12 @@ par(mfrow=c(1,1))
 
 # viii)
 
+rmse <- function(model) {
+  sqrt(mean(residuals(model)^2, na.rm=TRUE))
+} 
+
 data.frame(
   model = c("LM (iii)","ARIMA (iv)","ARIMAX (vi)"),
   AIC = c(AIC(best_model_iii), AIC(best_model_iv), AIC(best_model_vi)),
-  BIC = c(BIC(best_model_iii), BIC(best_model_iv), BIC(best_model_vi))
+  RMSE = c(rmse(best_model_iii), rmse(best_model_iv), rmse(best_model_vi))
 )
