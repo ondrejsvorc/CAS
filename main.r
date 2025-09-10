@@ -1,5 +1,9 @@
 setwd(if (requireNamespace("rstudioapi", quietly=TRUE) && rstudioapi::isAvailable()) dirname(rstudioapi::getActiveDocumentContext()$path) else getwd())
 
+library(zoo)
+library(lmtest)
+library(forecast)
+
 # Transformace datasetu, primárně denormalizace vybraných proměnných a přetypování proměnných na správné datové typy.
 # Některé proměnné byly autorem normalizovány pro účely strojového učení (např. teplota byla reprezentována intervalem <0, 1>).
 # Přidání dodatečné proměnné, která je spojením dne a měřené hodiny výpůjčky kola pro čitelnější časovou osu u grafů.
@@ -26,7 +30,9 @@ head(bike_sharing)
 # Pozvolna rostoucí lineární trend (lidé začínají více jezdit, pravděpodobně kvůli zlepšujícímu se počasí).
 plot(x = bike_sharing$datetime, y = bike_sharing$cnt, type = "l", col = "steelblue", xlab = "Měsíc", ylab = "Počet jízd", main = "Počet jízd (cnt)")
 
-get_subset <- function(data, days) { data[1:(days*24), ] }
+get_subset <- function(data, days) {
+  data[1:(days*24), ]
+}
 plot_cnt_days <- function(data, title) {
   plot(data$datetime, data$cnt, type="l", col="steelblue", xlab="Den a měsíc", ylab="Počet jízd", main=title, xaxt="n")
   axis.POSIXct(1, at=seq(from=min(data$datetime), to=max(data$datetime), by="1 day"), format="%d.%m")
@@ -79,7 +85,6 @@ plot(cnt.ts.decomposed)
 
 # Klouzavý průměr (24h) odfiltruje denní cyklus a ukáže čistější trend v datech.
 # Osa x symbolizuje počet dnů.
-library(zoo)
 cnt.ts.rm24 <- rollmean(cnt.ts, k = 24, align = "center")
 plot(cnt.ts, col = "gray", xlab = "Den", ylab = "Počet jízd", main = "Počet jízd s klouzavým průměrem")
 lines(cnt.ts.rm24, col = "steelblue", lwd = 2)
@@ -101,9 +106,14 @@ compare_aic(model1, model2, model3, model4)
 # cnt_t = β0 + β1·t + f(hr, weekday) + β2·temp_t + g(weathersit) + ε_t
 best_model_iii <- model4
 
+hw_add <- HoltWinters(cnt.ts, seasonal = "additive")
+plot(hw_add, main = "Holt-Winters (aditivní)")
+f_hw <- forecast(hw_add, h = 10)
+plot(f_hw, main = "Predikce Holt-Winters")
+
+
 # iv)
 
-library(forecast)
 model1 <- Arima(cnt.ts, order=c(0,0,0), seasonal=list(order=c(1,1,1), period=24))
 model2 <- Arima(cnt.ts, order=c(1,0,0), seasonal=list(order=c(1,1,1), period=24))
 model3 <- Arima(cnt.ts, order=c(0,0,1), seasonal=list(order=c(1,1,1), period=24))
@@ -121,7 +131,7 @@ compare_aic(model1, model2, model3, model4, model5, model6, model7, model8)
 # D=1 : Porovnáváme hodnoty s těmi před 24h -> odstraníme denní cyklus (sezónní rozdílování).
 # Q=1 : Model zohlední, jak moc se spletl ve stejné hodině včera (učení z chyb).
 # s=24: Cyklus je 24 hodin.
-best_model_iv <- model2 
+best_model_iv <- model2
 
 # v)
 
@@ -140,16 +150,16 @@ determine_lag <- function(ccf_result) {
   max_idx <- which.max(abs(correlations))
   best_lag <- lags[max_idx]
   best_correlation <- correlations[max_idx]
-  
+
   target_lags <- c(-3, -2, -1, 0, 1, 2, 3)
   rounded_lag <- target_lags[which.min(abs(target_lags - best_lag))]
   rounded_correlation <- round(best_correlation, 2)
-  
+
   abs_corr <- abs(rounded_correlation)
   strength <- if (abs_corr < 0.1) "velmi slabá" else if (abs_corr < 0.3) "slabá" else if (abs_corr < 0.5) "střední" else "silná"
   direction <- if (rounded_correlation > 0) "pozitivní" else "negativní"
   interpretation <- paste(strength, direction, "korelace")
-  
+
   return(c(lag = rounded_lag, correlation = rounded_correlation, interpretation = interpretation))
 }
 # 72 lagů = 3 dny dopředu i dozadu.
@@ -183,7 +193,6 @@ checkresiduals(model)
 best_model_vi <- model
 
 # Proměnná windspeed (nevýznamná) -> vliv větru se nepotvrdil.
-library(lmtest)
 ct <- coeftest(model)
 data.frame(
   p_value = ct[weather_variables, "Pr(>|z|)"],
