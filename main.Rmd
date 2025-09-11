@@ -287,6 +287,8 @@ data.frame(
 )
 ```
 
+Reziduum = rozdíl mezi pozorovanou hodnotou a hodnotou předpovězenou modelem. Jinými slovy je to chyba, kterou model udělal. Smyslem autokorelační funkce reziduí je zjistit, zda-li model neopomněl nějaký systematický vzor.
+
 ```{r}
 acf(resid(best_model_iii), main="ACF residuí modelu ze zadání iii)")
 acf(resid(best_model_iv), main="ACF residuí modelu ze zadání iv)")
