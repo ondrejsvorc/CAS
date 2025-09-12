@@ -39,7 +39,7 @@ setwd(if (requireNamespace("rstudioapi", quietly=TRUE) && rstudioapi::isAvailabl
 
 ### Transformace datasetu
 
-Primárně denormalizace vybraných proměnných a přetypování proměnných na správné datové typy. Některé proměnné byly autorem normalizovány pro účely strojového učení (např. teplota byla reprezentována intervalem <0, 1>). Přidání dodatečné proměnné, která je spojením dne a měřené hodiny výpůjčky kola pro čitelnější časovou osu u grafů.
+Primárně denormalizace vybraných proměnných a přetypování proměnných na správné datové typy. Některé proměnné byly autorem datasetu normalizovány pro účely strojového učení (např. teplota byla reprezentována intervalem <0; 1>). Dále byla přidána proměnná, která je spojením dne a měřené hodiny jízd na kole pro čitelnější časovou osu u grafů.
 
 ```{r}
 rows_3_months <- 2067
@@ -93,7 +93,7 @@ plot_cnt_hours <- function(data, title) {
 }
 ```
 
-Z grafů níže lze vyčíst denní sezónnost, pravidelné cykly (špičky ráno/odpoledne, noční minimum), kalendářní vlivy (pracovní den vs víkend). Pracovní dny mají podobný průběh (špičky), víkend má nižší průběh (plošší křivka).Intradenní průběh dále zvýrazňuje výkyvy v čase.
+Z grafů níže lze vyčíst denní a týdenní sezónnost, pravidelné cykly (špičky ráno/odpoledne, noční minimum), kalendářní vlivy (pracovní den vs víkend). Pracovní dny mají podobný průběh, zatímco průběh víkendů je sploštěný.Intradenní průběh jízd dále zvýrazňuje výkyvy v čase.
 
 ```{r}
 plot_cnt_days(get_subset(bike_sharing, days = 14), "Počet jízd (14 dní)")
@@ -122,7 +122,7 @@ grid(nx=NA, ny=NULL, col="gray", lty="dotted")
 legend("topleft", c("Pracovní den","Víkend"), lty=c(1,2), col=c("steelblue","darkred"), bty="n")
 ```
 
-Nejvíce jízd je během pracovních dnů, pátek mírně vyčnívá, víkendy jsou slabší. Špičky jsou kolem 8:00 a 17:00, přičemž 18:00-4:00 počet jízd klesá až do úplných minim, a od 5:00 počet jízd zase vzrůstá.Zkrátka, čím lepší je počasí, tím je více jízd.
+Nejvíce jízd je během pracovních dnů, pátek mírně vyčnívá, víkendy jsou slabší. Špičky jsou kolem 8:00 a 17:00, přičemž 18:00-4:00 počet jízd klesá až do úplných minim, a od 5:00 počet jízd zase vzrůstá. Zkrátka se zdá, že čím lepší je počasí, tím je více jízd.
 
 ```{r}
 boxplot(cnt ~ weekday, data=bike_sharing, xlab="Den v týdnu", ylab="Počet jízd", main="Rozdělení počtu jízd podle dne v týdnu")
@@ -240,13 +240,13 @@ determine_lag <- function(ccf_result) {
 ```
 
 72 lagů = 3 dny dopředu i dozadu.
-- cnt × temp: kladná korelace, lag 0 -> okamžitý efekt teploty na počet jízd.
-- cnt × hum: záporná korelace, lag 0 -> okamžitý negativní efekt vlhkosti.
-- cnt × windspeed: slabá záporná korelace, lag +1 -> vítr před hodinou koreluje s menším počtem jízd nyní.
 
 ```{r}
+# cnt × temp: kladná korelace, lag 0 -> okamžitý efekt teploty na počet jízd.
 print(determine_lag(ccf(cnt.ts, temp.ts, lag.max = 72, main = "Teplota")))
+# cnt × hum: záporná korelace, lag 0 -> okamžitý negativní efekt vlhkosti.
 print(determine_lag(ccf(cnt.ts, hum.ts, lag.max = 72, main = "Vlhkost")))
+# cnt × windspeed: slabá záporná korelace, lag +1 -> vítr před hodinou koreluje s menším počtem jízd nyní.
 print(determine_lag(ccf(cnt.ts, windspeed.ts, lag.max = 72, main = "Rychlost větru")))
 ```
 
@@ -311,6 +311,7 @@ par(mfrow=c(1,1))
 ### viii)
 
 ```{r}
+# RMSE = Root Mean Squared Error
 rmse <- function(model) {
   sqrt(mean(residuals(model)^2, na.rm=TRUE))
 } 
