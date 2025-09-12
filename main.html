@@ -404,6 +404,64 @@ Vám přijde pro predikci nejlepší)
 </ol>
 <p>U každého kroku by mělo být uvedeno, jakou metodu používáte a proč,
 co Vám z ní vyšlo a jak vypadá “optimální model” v daném kroku.</p>
+<div id="datová-sada" class="section level3">
+<h3>Datová sada</h3>
+<p>Byl použit pouze soubor <strong>hour.csv</strong> a přejmenován na
+<strong>bike_sharing.csv</strong> (<a href="https://archive.ics.uci.edu/dataset/275/bike+sharing+dataset" class="uri">https://archive.ics.uci.edu/dataset/275/bike+sharing+dataset</a>).</p>
+<div id="sloupce" class="section level4">
+<h4>Sloupce</h4>
+<ul>
+<li><strong>instant</strong> – ID záznamu (1, 2, 3, …)</li>
+<li><strong>dteday</strong> – datum (YYYY-MM-DD)</li>
+<li><strong>season</strong> – roční období (1 jaro, 2 léto, 3 podzim, 4
+zima)</li>
+<li><strong>yr</strong> – rok (0 a 1, kde 0 symbolizuje rok 2011 a 1 rok
+2012)</li>
+<li><strong>mnth</strong> – měsíc (1–12)</li>
+<li><strong>hr</strong> – hodina (0–23)</li>
+<li><strong>holiday</strong> – svátek (1 ano, 0 ne)</li>
+<li><strong>weekday</strong> – den v týdnu (0 neděle … 6 sobota)</li>
+<li><strong>workingday</strong> – pracovní den (1 ano, 0 ne)</li>
+<li><strong>weathersit</strong> – počasí (1 jasno, 2 mlha/oblačno, 3
+déšť/sníh lehký, 4 déšť/sníh silný)</li>
+<li><strong>temp</strong> – teplota (0–1, normalizovaná škála)</li>
+<li><strong>atemp</strong> – pocitová teplota (0–1, normalizovaná
+škála)</li>
+<li><strong>hum</strong> – vlhkost (0–1, procenta)</li>
+<li><strong>windspeed</strong> – vítr (0–1, normalizovaná škála)</li>
+<li><strong>casual</strong> – počet neregistrovaných uživatelů</li>
+<li><strong>registered</strong> – počet registrovaných uživatelů</li>
+<li><strong>cnt</strong> – celkový počet jízd</li>
+</ul>
+</div>
+<div id="interpretace" class="section level4">
+<h4>Interpretace</h4>
+<p>Každý záznam symbolizuje souhrn všech jízd uskutečněných v dané
+hodině spolu s kontextem (datum, čas, den v týdnu, pracovní den či
+svátek, počasí, teplota, vlhkost, vítr, …).</p>
+<p>První záznam:</p>
+<pre><code>1, 2011-01-01, 1, 0, 1, 0, 0, 6, 0, 1, 0.24, 0.288, 0.81, 0.000, 3, 13, 16</code></pre>
+<ul>
+<li><strong>instant = 1</strong> → první záznam</li>
+<li><strong>dteday = 2011-01-01</strong> → datum 1. 1. 2011</li>
+<li><strong>season = 1</strong> → zima</li>
+<li><strong>yr = 0</strong> → 2011</li>
+<li><strong>mnth = 1</strong> → leden</li>
+<li><strong>hr = 0</strong> → hodina 00:00–00:59</li>
+<li><strong>holiday = 0</strong> → není svátek</li>
+<li><strong>weekday = 6</strong> → sobota</li>
+<li><strong>workingday = 0</strong> → nepracovní den</li>
+<li><strong>weathersit = 1</strong> → jasno</li>
+<li><strong>temp = 0.24</strong> → normalizovaná teplota</li>
+<li><strong>atemp = 0.288</strong> → normalizovaná pocitová teplota</li>
+<li><strong>hum = 0.81</strong> → vlhkost 81 %</li>
+<li><strong>windspeed = 0.000</strong> → bezvětří</li>
+<li><strong>casual = 3</strong> → 3 neregistrovaní uživatelé</li>
+<li><strong>registered = 13</strong> → 13 registrovaných uživatelů</li>
+<li><strong>cnt = 16</strong> → celkem 16 jízd</li>
+</ul>
+</div>
+</div>
 <div id="nastavení-pracovní-složky" class="section level3">
 <h3>Nastavení pracovní složky</h3>
 <pre class="r"><code>setwd(if (requireNamespace(&quot;rstudioapi&quot;, quietly=TRUE) &amp;&amp; rstudioapi::isAvailable()) dirname(rstudioapi::getActiveDocumentContext()$path) else getwd())</code></pre>
