@@ -3,8 +3,8 @@ i) podívejte se na graf dekompozice a zkuste zhodnotit, zda se řadu povedlo do
 Trend ukazuje pozvolný nárůst jízd v čase, odpovídá zlepšujícímu se počasí od zimy k jaru.
 Sezónnost je zachycena jen částečně - vidíme denní sezónnost - ale týdenní už ne (všední dny vs víkendy),
 to je i důvod, proč jsou residua (složka random) poměrně velká. Dekompozice tedy zachytila hlavní trend
-a denní sezónnost, což je v pořádku, protože funkce decompose má parametr frequency nastavený na 24, tedy my explicitně říkáme, že 
-řada má denní sezónnost, ale týdenní již nezmiňujeme, protože funkce decompose dokáže pracovat pouze s takovými časovými řadami,
+a denní sezónnost, což je v pořádku, protože funkce ts má parametr frequency nastavený na 24, tedy my explicitně říkáme, že 
+řada má denní sezónnost, ale týdenní již nezmiňujeme, protože funkce ts dokáže pracovat pouze s takovými časovými řadami,
 které mají pouze jednu sezónnost (nelze předat něco jako c(24, 7*24)). Řešením by mohlo být https://www.rdocumentation.org/packages/forecast/versions/8.24.0/topics/msts
 
 ii) co vám řekly modely lineární regrese, kde počítáte závislost na čase, hodině, dni v týdnu, případně teplotě a počasí? jaké závislosti v nich vidíte? 
