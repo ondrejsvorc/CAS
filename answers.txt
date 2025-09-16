@@ -1,0 +1,86 @@
+i) podívejte se na graf dekompozice a zkuste zhodnotit, zda se řadu povedlo dobře rozložit
+
+Trend ukazuje pozvolný nárůst jízd v čase, odpovídá zlepšujícímu se počasí od zimy k jaru.
+Sezónnost je zachycena jen částečně - vidíme denní sezónnost - ale týdenní už ne (všední dny vs víkendy),
+to je i důvod, proč jsou residua (složka random) poměrně velká. Dekompozice tedy zachytila hlavní trend
+a denní sezónnost, což je v pořádku, protože funkce decompose má parametr frequency nastavený na 24, tedy my explicitně říkáme, že 
+řada má denní sezónnost, ale týdenní již nezmiňujeme, protože funkce decompose dokáže pracovat pouze s takovými časovými řadami,
+které mají pouze jednu sezónnost (nelze předat něco jako c(24, 7*24)). Řešením by mohlo být https://www.rdocumentation.org/packages/forecast/versions/8.24.0/topics/msts
+
+ii) co vám řekly modely lineární regrese, kde počítáte závislost na čase, hodině, dni v týdnu, případně teplotě a počasí? jaké závislosti v nich vidíte? 
+
+model1
+- nejprve jsme zkusili, zda-li bude dostačující vysvětlit počet jízd pomocí času a hodiny dne
+- Significance (Pr>|t|): Čím více hvězdiček, tím více významný efekt.
+- Residual standard error: Model se průměrně sekl o 42 jízd
+- hodina 0:00 se bere jako referenční a relativně k ní se pak počítají ostatní hodiny (a referenční je proto, že je to první hodnota)
+- např. factor(hr)8 = 134.7 znamená: v 8 ráno je v průměru o ~135 jízd více než o půlnoci.
+- např. factor(hr)1 = -6.346009 znamená: v 1 ráno je v průměru o ~6 jízd méně než o půlnoci.
+- Std. Error = říká, jak moc si model „není jistý“ tím číslem v Estimate (říká, jak moc by se mohl lišit odhad koeficientu, kdybys měl jiný vzorek dat)
+- t value = Estimate děleno Std. Error = ukazuje, kolikrát je odhad větší než jeho nejistota (čím vyšší absolutní hodnota, tím silnější důkaz, že efekt není náhodný)
+- t = Estimate = 0.024 -> každým dalším časovým krokem (hodina) přibude v průměru asi 0.024 jízdy.
+
+R² = 0 → model je k ničemu (vysvětluje nic, stejně dobrý jako hádat průměr).
+R² = 1 → model dokonalý (vysvětluje vše, rezidua = 0).
+R² = 0.61 → model vysvětluje 61 % toho, proč se počty jízd mění (čas + hodina vysvětlují velkou část), ale pořád 39 % je náhoda nebo jiné faktory.
+
+factor(hr) + factor(weekday): tím říkáme: „vliv hodiny“ + „vliv dne“ působí nezávisle.
+factor(hr) * factor(weekday): interakcí říkáme, že „vliv hodiny“ a „vliv dne“ spolu souvisí.
+
+AIC bere v úvahu jak přesnost modelu, tak počet parametrů. Je proto vhodné pro porovnání více modelů s různou složitostí – ukáže, který má nejlepší kompromis mezi kvalitou a jednoduchostí
+
+iii) co znamená model cnt_t = β0 + β1·t + f(hr, weekday) + β2·temp_t + g(weathersit) + ε_t
+
+Počet jízd v danou hodinu závisí na dlouhodobém trendu, specifické kombinaci hodiny a dne v týdnu, aktuální teplotě a počasí, plus na nějaké náhodné složce.
+
+β₀ = základní úroveň (intercept), průměrný počet jízd při referenčních hodnotách.
+β₁·t = lineární trend – postupně v čase rostou/ubývají jízdy.
+f(hr, weekday) = funkce interakce hodiny a dne – zachytí typický denní průběh a rozdíly mezi pracovními dny a víkendy.
+β₂·temp_t = vliv teploty – čím tepleji, tím více jízd (do určité míry).
+g(weathersit) = vliv kategorie počasí (slunečno, oblačno, déšť).
+ε_t = náhodná složka, tedy vlivy, které model nevysvětlí.
+
+iv) jak byste interpretovali odhady parametru alpha, beta a gamma v Holt-Wintersove modelu?
+
+vysoké α = model věří aktuálním datům
+nízké α = model je hodně „konzervativní“ a drží se historie
+
+vysoké β = model se okamžitě učí nový trend.
+nízké β = model ignoruje krátkodobé změny a trend drží stabilní.
+
+vysoké γ = model si myslí: „To, co bylo dnes, bude i příště.“
+nízké γ = model říká: „Dnešek je možná výjimka, držím se historie.“
+
+Alpha (0.92): Model hodně věří nejnovějším datům, takže když počty jízd vyskočí, hned to promítne do předpovědi.
+Beta (0): Trend se neaktualizuje, model předpokládá, že dlouhodobý růst nebo pokles je fixní.
+Gamma (1): Sezónní vzorce se vždy přepíšou podle posledního dne, takže model okamžitě reaguje na změny v denním cyklu.
+
+v) jak Vám vychází parametry nejlepšího SARIMA modelu, umíte je zapsat do rovnice?
+
+> summary(best_model_iv)
+Series: cnt.ts 
+ARIMA(1,0,0)(1,1,1)[24] 
+
+Coefficients:
+         ar1    sar1     sma1
+      0.7046  0.4466  -0.9827
+s.e.  0.0166  0.0223   0.0124
+
+sigma^2 = 1373:  log likelihood = -10306.74
+AIC=20621.49   AICc=20621.51   BIC=20643.98
+
+Training set error measures:
+                   ME     RMSE      MAE       MPE     MAPE      MASE     ACF1
+Training set 1.923404 36.81552 24.16915 -70.05154 95.95875 0.6819731 0.163663
+
+vi) co vám říká autokorelační funkce residuí ARIMAX modelu?
+
+ACF residuí ARIMAX modelu ukazuje, že rezidua nejsou úplně bílý šum – zůstává v nich výrazná denní sezónní struktura kolem 24. lagů. To znamená, že model sice vysvětlil vliv počasí i část autoregresní struktury, ale pořád nezachytil celý denní cyklus. Rezidua mají průměr blízko nuly, ale nejsou dokonale náhodná
+
+vii) v modelu ARIMAX se Vám nespočítaly sezónní parametry, víte proč?
+
+V ARIMAXu se mi nezobrazily sezónní parametry, protože exogenní proměnné (počasí, vítr) už zachytily část sezónního chování. Algoritmus auto.arima proto vyhodnotil, že sezónní členy nejsou potřeba, a ponechal jen ARIMA s regresní částí.
+
+viii) připravte si, prosím, obrázek, na kterém budou vidět vypočtené predikce (tj. obrázek, kde nebudou znázorněny všechny minulé hodnoty, a bude tam zobrazen třeba jen poslední týden, nebo nějaká jiná část dat tak, aby byly vidět i predikce)
+
+-
