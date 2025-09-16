@@ -252,6 +252,7 @@ compare_aic(model1, model2, model3, model4, model5, model6, model7, model8)
 # Q=1 : Model zohlední, jak moc se spletl ve stejné hodině včera (učení z chyb).
 # s=24: Cyklus je 24 hodin.
 best_model_iv <- model2
+summary(best_model_iv)
 ```
 
 ### v)
@@ -355,6 +356,13 @@ par(mfrow=c(1,2))
 plot(f_iv, main="Predikce (ARIMA, iv)")
 plot(f_vi, main="Predikce (ARIMAX, vi)")
 par(mfrow=c(1,1))
+```
+
+Poslední týden + 10 hodin predikce
+
+```{r}
+plot(f_iv, include = 7*24, main = "Predikce (ARIMA, iv)",xlab = "Čas", ylab = "Počet jízd")
+plot(f_vi, include = 7*24, main = "Predikce (ARIMAX, vi)", xlab = "Čas", ylab = "Počet jízd")
 ```
 
 ### viii)

@@ -83,4 +83,4 @@ V ARIMAXu se mi nezobrazily sezónní parametry, protože exogenní proměnné (
 
 viii) připravte si, prosím, obrázek, na kterém budou vidět vypočtené predikce (tj. obrázek, kde nebudou znázorněny všechny minulé hodnoty, a bude tam zobrazen třeba jen poslední týden, nebo nějaká jiná část dat tak, aby byly vidět i predikce)
 
--
+přidán do seminární práce
